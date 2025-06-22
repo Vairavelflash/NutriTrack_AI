@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-950 text-white font-inter antialiased;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+  
+  .glass-dark {
+    @apply bg-dark-900/40 backdrop-blur-md border border-white/10 shadow-2xl;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 to-emerald-400 bg-clip-text text-transparent;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 border border-primary-400/30;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 border border-emerald-400/30;
+  }
+  
+  .btn-ghost {
+    @apply glass hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 border border-white/40 hover:border-white/60 shadow-lg hover:shadow-xl;
+  }
+  
+  .card {
+    @apply glass rounded-2xl p-6 transition-all duration-300 hover:bg-white/15 hover:scale-105 hover:shadow-2xl border border-white/20;
+  }
+  
+  .input-field {
+    @apply glass rounded-xl px-4 py-3 text-white placeholder-white/60 border border-white/30 focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all duration-300 outline-none backdrop-blur-md;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary-500;
+}
+
+/* Enhanced animations */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes bounceGentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
+  100% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.8); }
+}
+
+/* Parallax effect styles */
+.parallax-container {
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  perspective: 1px;
+}
+
+.parallax-element {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.parallax-back {
+  transform: translateZ(-1px) scale(2);
+}
+
+.parallax-base {
+  transform: translateZ(0);
+}
+
+/* Enhanced glass morphism */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}

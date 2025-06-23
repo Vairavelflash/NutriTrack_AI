@@ -1,34 +1,40 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Utensils, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Utensils, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-export default function Login() {
+export default function SignUp() {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!username || !email || !password) {
       return;
     }
 
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            username: username,
+          }
+        }
       });
 
       if (error) {
-        console.error('Error signing in:', error.message);
+        console.error('Error signing up:', error.message);
       } else {
-        navigate('/home');
+        navigate('/login');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -99,13 +105,34 @@ export default function Login() {
               <Utensils className="text-white" size={28} />
             </div>
             <h1 className="text-3xl font-bold gradient-text mb-2">
-              NutriTrack AI
+              Join NutriTrack AI
             </h1>
-            <p className="text-white/80">Smart nutrition tracking with AI</p>
+            <p className="text-white/80">Create your account to get started</p>
           </motion.div>
 
-          {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-6">
+          {/* Sign Up Form */}
+          <form onSubmit={handleSignUp} className="space-y-6">
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <label className="block text-sm font-medium text-white/90 mb-2">
+                Username
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" size={20} />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="input-field pl-12 w-full"
+                  placeholder="Enter your username"
+                  required
+                />
+              </div>
+            </motion.div>
+
             <motion.div
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -158,13 +185,13 @@ export default function Login() {
                 disabled={loading}
                 className="btn-primary w-full flex items-center justify-center space-x-2 group shadow-xl disabled:opacity-50"
               >
-                <span>{loading ? 'Signing In...' : 'Sign In'}</span>
+                <span>{loading ? 'Creating Account...' : 'Create Account'}</span>
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
               </button>
             </motion.div>
           </form>
 
-          {/* Sign Up Link */}
+          {/* Login Link */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -172,12 +199,12 @@ export default function Login() {
             className="mt-6 text-center"
           >
             <p className="text-white/70">
-              Don't have an account?{' '}
+              Already have an account?{' '}
               <button
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/login')}
                 className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
               >
-                Sign Up
+                Sign In
               </button>
             </p>
           </motion.div>

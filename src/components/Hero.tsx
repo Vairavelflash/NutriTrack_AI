@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Camera, Zap, TrendingUp, Star } from 'lucide-react';
+import { Camera, Zap, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"]
@@ -85,11 +87,6 @@ export default function Hero() {
           transition={{ duration: 1, delay: 0.2 }}
           className="mb-8"
         >
-          <div className="inline-flex items-center glass rounded-full px-6 py-3 mb-6 backdrop-blur-md border border-white/30">
-            <Star className="text-emerald-400 mr-2" size={20} />
-            <span className="text-white font-medium">AI-Powered Nutrition Analysis</span>
-          </div>
-          
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
             <span className="gradient-text">Track Your Nutrition</span>
             <br />
@@ -108,7 +105,10 @@ export default function Hero() {
           transition={{ duration: 1, delay: 0.6 }}
           className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-12"
         >
-          <button className="btn-primary text-lg px-8 py-4 group shadow-xl">
+          <button 
+            onClick={() => navigate('/analyze')}
+            className="btn-primary text-lg px-8 py-4 group shadow-xl"
+          >
             <Camera className="mr-3 group-hover:rotate-12 transition-transform" size={24} />
             Start Analyzing Food
           </button>

@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Calendar, Award, Target } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function NutritionTable() {
+  const navigate = useNavigate();
+  
   const nutritionData = [
     { date: '2024-01-15', meal: 'Grilled Chicken Salad', calories: 420, protein: 35, carbs: 28, fat: 18, fiber: 8 },
     { date: '2024-01-15', meal: 'Oatmeal with Berries', calories: 280, protein: 8, carbs: 52, fat: 6, fiber: 12 },
@@ -128,7 +131,10 @@ export default function NutritionTable() {
           </div>
           
           <div className="p-6 border-t border-white/10 text-center">
-            <button className="btn-primary">
+            <button 
+              onClick={() => navigate('/history')}
+              className="btn-primary"
+            >
               View Complete History
             </button>
           </div>

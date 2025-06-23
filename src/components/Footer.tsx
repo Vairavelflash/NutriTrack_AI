@@ -70,7 +70,7 @@ export default function Footer() {
                 </div>
               </div>
 
-              {/* Social Links with GitHub centered */}
+              {/* Social Links with consistent animations */}
               <div className="flex items-center justify-center space-x-6">
                 <motion.a
                   href="https://github.com"
@@ -84,7 +84,7 @@ export default function Footer() {
                 </motion.a>
                 <motion.a
                   href="https://twitter.com"
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.2, rotate: 360 }}
                   whileTap={{ scale: 0.9 }}
                   className="w-10 h-10 glass rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300"
                 >
@@ -92,7 +92,7 @@ export default function Footer() {
                 </motion.a>
                 <motion.a
                   href="https://instagram.com"
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.2, rotate: 360 }}
                   whileTap={{ scale: 0.9 }}
                   className="w-10 h-10 glass rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300"
                 >

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Utensils, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Utensils, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -18,6 +19,7 @@ export default function Login() {
     }
 
     setLoading(true);
+    setError(''); // Clear any previous errors
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -26,15 +28,25 @@ export default function Login() {
       });
 
       if (error) {
-        console.error('Error signing in:', error.message);
+        setError(error.message);
       } else {
         navigate('/home');
       }
     } catch (error) {
-      console.error('Error:', error);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (error) setError(''); // Clear error when user starts typing
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (error) setError(''); // Clear error when user starts typing
   };
 
   return (
@@ -104,6 +116,18 @@ export default function Login() {
             <p className="text-white/80">Smart nutrition tracking with AI</p>
           </motion.div>
 
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center space-x-3"
+            >
+              <AlertCircle className="text-red-400 flex-shrink-0" size={20} />
+              <p className="text-red-200 text-sm">{error}</p>
+            </motion.div>
+          )}
+
           {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             <motion.div
@@ -119,7 +143,7 @@ export default function Login() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                   className="input-field pl-12 w-full"
                   placeholder="Enter your email"
                   required
@@ -140,7 +164,7 @@ export default function Login() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   className="input-field pl-12 w-full"
                   placeholder="Enter your password"
                   required

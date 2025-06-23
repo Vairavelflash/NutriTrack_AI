@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Camera, Image, Loader, CheckCircle, X, Utensils, Zap, Apple, Beef, Wheat, Droplets } from 'lucide-react';
+import { Upload, Camera, Image, Loader, CheckCircle, X, Utensils, Zap, Apple, Beef, Wheat, Droplets, Save } from 'lucide-react';
 import {Mistral} from '@mistralai/mistralai';
 import imageCompression from 'browser-image-compression';
+import { supabase } from '../lib/supabase';
 
 interface FoodItem {
   item: string;
@@ -19,12 +20,24 @@ interface AnalysisResponse {
   food_items: FoodItem[];
 }
 
+interface NutritionTotals {
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  totalFiber: number;
+  totalVitaminE: number;
+  totalIron: number;
+}
+
 export default function FoodAnalysis() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [response, setResponse] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mealDate, setMealDate] = useState(new Date().toISOString().split('T')[0]);
 
   const IMAGE_API_KEY = "186ed0db199b69c9e7ed2c6eb61f118c";
   const MISTRAL_API_KEY = "KQpq9x34XSgnQf2Be8ISxmsh12sxifRD";
@@ -138,6 +151,83 @@ Ensure the response is for the entire plate, summing up all the individual piece
       setError('Failed to analyze image. Please try again.');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const calculateTotals = (foodItems: FoodItem[]): NutritionTotals => {
+    return foodItems.reduce((totals, item) => {
+      return {
+        totalCalories: totals.totalCalories + (parseFloat(item.calories) || 0),
+        totalProtein: totals.totalProtein + (parseFloat(item.protein) || 0),
+        totalCarbs: totals.totalCarbs + (parseFloat(item.carbohydrates) || 0),
+        totalFat: totals.totalFat + (parseFloat(item.fat) || 0),
+        totalFiber: totals.totalFiber + (parseFloat(item.fiber) || 0),
+        totalVitaminE: totals.totalVitaminE + (parseFloat(item.vitamin_e) || 0),
+        totalIron: totals.totalIron + (parseFloat(item.iron) || 0),
+      };
+    }, {
+      totalCalories: 0,
+      totalProtein: 0,
+      totalCarbs: 0,
+      totalFat: 0,
+      totalFiber: 0,
+      totalVitaminE: 0,
+      totalIron: 0,
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (!response?.food_items) {
+      setError('No nutrition data to save');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      const totals = calculateTotals(response.food_items);
+
+      // Insert nutrition entry
+      const { error: insertError } = await supabase
+        .from('nutrition_entries')
+        .insert({
+          user_id: user.id,
+          username: user.user_metadata?.display_name || 'User',
+          meal_date: mealDate,
+          total_calories: totals.totalCalories,
+          total_protein: totals.totalProtein,
+          total_carbs: totals.totalCarbs,
+          total_fat: totals.totalFat,
+          total_fiber: totals.totalFiber,
+          total_vitamin_e: totals.totalVitaminE,
+          total_iron: totals.totalIron,
+          food_items: response.food_items
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Clear the form
+      clearImage();
+      setMealDate(new Date().toISOString().split('T')[0]);
+      
+      // Show success message
+      alert('Nutrition data saved successfully!');
+      
+    } catch (error) {
+      console.error('Error saving nutrition data:', error);
+      setError('Failed to save nutrition data. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -337,6 +427,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
                     Here's the nutritional breakdown of your meal:
                   </p>
                   
+                  {/* Individual Food Items */}
                   {response.food_items.map((item, itemIndex) => (
                     <div key={itemIndex} className="mb-6">
                       <h4 className="text-xl font-bold text-white mb-4 flex items-center">
@@ -370,7 +461,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
                                 <div className="text-right">
                                   <span className="text-lg font-bold text-white">{value}</span>
                                   {key === 'calories' && <span className="text-white/60 ml-1">kcal</span>}
-                                  {/* {key !== 'calories' && <span className="text-white/60 ml-1">g</span>} */}
+                                  {key !== 'calories' && <span className="text-white/60 ml-1">g</span>}
                                 </div>
                               </div>
                             </motion.div>
@@ -379,17 +470,115 @@ Ensure the response is for the entire plate, summing up all the individual piece
                       </div>
                     </div>
                   ))}
+
+                  {/* Totals Summary */}
+                  {(() => {
+                    const totals = calculateTotals(response.food_items);
+                    return (
+                      <div className="mt-8 p-6 bg-gradient-to-r from-primary-500/20 to-emerald-500/20 rounded-2xl border border-primary-400/30">
+                        <h4 className="text-xl font-bold text-white mb-4 text-center">Total Nutrition Summary</h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-white/20">
+                                <th className="text-left p-3 text-white/80 font-medium">Nutrient</th>
+                                <th className="text-right p-3 text-white/80 font-medium">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="border-b border-white/10">
+                                <td className="p-3 text-white">Calories</td>
+                                <td className="p-3 text-right">
+                                  <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {totals.totalCalories.toFixed(1)} kcal
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr className="border-b border-white/10">
+                                <td className="p-3 text-white">Protein</td>
+                                <td className="p-3 text-right">
+                                  <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {totals.totalProtein.toFixed(1)}g
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr className="border-b border-white/10">
+                                <td className="p-3 text-white">Carbohydrates</td>
+                                <td className="p-3 text-right">
+                                  <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {totals.totalCarbs.toFixed(1)}g
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr className="border-b border-white/10">
+                                <td className="p-3 text-white">Fat</td>
+                                <td className="p-3 text-right">
+                                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {totals.totalFat.toFixed(1)}g
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr className="border-b border-white/10">
+                                <td className="p-3 text-white">Fiber</td>
+                                <td className="p-3 text-right">
+                                  <span className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {totals.totalFiber.toFixed(1)}g
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr className="border-b border-white/10">
+                                <td className="p-3 text-white">Vitamin E</td>
+                                <td className="p-3 text-right">
+                                  <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {totals.totalVitaminE.toFixed(1)}g
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 text-white">Iron</td>
+                                <td className="p-3 text-right">
+                                  <span className="bg-gradient-to-r from-gray-500 to-slate-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {totals.totalIron.toFixed(1)}g
+                                  </span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   
-                  <div className="flex space-x-4 mt-6">
-                    <button 
-                      onClick={clearImage}
-                      className="btn-secondary flex-1"
-                    >
-                      Analyze Another
-                    </button>
-                    <button className="btn-primary flex-1">
-                      Save Results
-                    </button>
+                  {/* Meal Date and Submit */}
+                  <div className="mt-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-2">
+                        Meal Date
+                      </label>
+                      <input
+                        type="date"
+                        value={mealDate}
+                        onChange={(e) => setMealDate(e.target.value)}
+                        className="input-field w-full"
+                      />
+                    </div>
+                    
+                    <div className="flex space-x-4">
+                      <button 
+                        onClick={clearImage}
+                        className="btn-secondary flex-1"
+                      >
+                        Analyze Another
+                      </button>
+                      <button 
+                        onClick={handleSubmit}
+                        disabled={isSaving}
+                        className="btn-primary flex-1 flex items-center justify-center"
+                      >
+                        <Save className="mr-2" size={20} />
+                        {isSaving ? 'Saving...' : 'Submit'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

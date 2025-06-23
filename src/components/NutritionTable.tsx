@@ -269,7 +269,7 @@ export default function NutritionTable() {
                           {Math.round(meal.total_fat)}
                         </span>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>

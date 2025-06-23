@@ -80,7 +80,7 @@ export default function Hero() {
         </div>
       </motion.div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -107,7 +107,7 @@ export default function Hero() {
         >
           <button 
             onClick={() => navigate('/analyze')}
-            className="btn-primary text-lg px-8 py-4 group shadow-xl"
+            className="btn-primary text-lg px-8 py-4 group shadow-xl flex items-center"
           >
             <Camera className="mr-3 group-hover:rotate-12 transition-transform" size={24} />
             Start Analyzing Food

@@ -4,11 +4,14 @@ import { Utensils, Menu, X, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import LogoutModal from './LogoutModal';
+import ProfileModal from './ProfileModal';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +20,39 @@ export default function Header() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Get current user
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser({
+          username: user.user_metadata?.display_name || 'User',
+          email: user.email || '',
+          lastSeen: new Date().toLocaleDateString(),
+          plan: 'Starter' // Default plan, you can fetch this from your database
+        });
+      }
+    };
+
+    getCurrentUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser({
+          username: session.user.user_metadata?.display_name || 'User',
+          email: session.user.email || '',
+          lastSeen: new Date().toLocaleDateString(),
+          plan: 'Starter'
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const menuItems = [
@@ -58,7 +94,7 @@ export default function Header() {
           isScrolled ? 'glass-dark shadow-2xl' : 'bg-transparent'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <motion.div
@@ -91,13 +127,19 @@ export default function Header() {
 
             {/* Profile Menu */}
             <div className="hidden md:flex items-center space-x-4">
+              {/* Profile Button with Username */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="glass hover:bg-white/20 p-2 rounded-xl transition-all duration-200"
+                onClick={() => setIsProfileModalOpen(true)}
+                className="glass hover:bg-white/20 px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2"
               >
                 <User className="text-white" size={20} />
+                {user && (
+                  <span className="text-white font-medium">{user.username}</span>
+                )}
               </motion.button>
+              
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -138,13 +180,23 @@ export default function Header() {
                   {item.name}
                 </button>
               ))}
-              <div className="border-t border-white/10 pt-3 mt-3">
+              <div className="border-t border-white/10 pt-3 mt-3 space-y-2">
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsProfileModalOpen(true);
+                  }}
+                  className="flex items-center text-white/80 hover:text-white font-medium py-2 transition-colors w-full"
+                >
+                  <User size={16} className="mr-2" />
+                  Profile
+                </button>
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     setIsLogoutModalOpen(true);
                   }}
-                  className="flex items-center text-white/80 hover:text-white font-medium py-2 transition-colors"
+                  className="flex items-center text-white/80 hover:text-white font-medium py-2 transition-colors w-full"
                 >
                   <LogOut size={16} className="mr-2" />
                   Logout
@@ -160,6 +212,13 @@ export default function Header() {
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
+      />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={user}
       />
     </>
   );

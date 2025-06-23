@@ -26,7 +26,7 @@ export default function SignUp() {
         password,
         options: {
           data: {
-            username: username,
+            display_name: username,
           }
         }
       });
@@ -44,7 +44,7 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden">
       {/* Enhanced animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div

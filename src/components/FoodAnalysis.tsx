@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Camera, Image, Loader, CheckCircle, X, Utensils, Zap, Apple, Beef, Wheat, Droplets } from 'lucide-react';
-import { Mistral } from '@mistralai/mistralai';
+import Mistral from '@mistralai/mistralai';
 import imageCompression from 'browser-image-compression';
 
 interface FoodItem {

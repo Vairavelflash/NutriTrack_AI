@@ -39,45 +39,48 @@ export default function NutritionTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
   const fetchNutritionData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (userError || !user) {
+      if (!session) {
         throw new Error('User not authenticated');
       }
 
-      // Fetch nutrition entries for the current user
-      const { data, error: fetchError } = await supabase
-        .from('nutrition_entries')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('meal_date', { ascending: false })
-        .limit(10);
+      // Fetch nutrition entries from backend
+      const response = await fetch(`${API_BASE_URL}/api/nutrition/history?limit=10`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
-      if (fetchError) {
-        throw fetchError;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch nutrition data');
       }
 
-      setNutritionData(data || []);
+      setNutritionData(data.data || []);
       
       // Calculate weekly stats
-      if (data && data.length > 0) {
-        const last7Days = data.slice(0, 7);
-        const totalCalories = last7Days.reduce((sum, entry) => sum + entry.total_calories, 0);
-        const totalProtein = last7Days.reduce((sum, entry) => sum + entry.total_protein, 0);
+      if (data.data && data.data.length > 0) {
+        const last7Days = data.data.slice(0, 7);
+        const totalCalories = last7Days.reduce((sum: number, entry: NutritionEntry) => sum + entry.total_calories, 0);
+        const totalProtein = last7Days.reduce((sum: number, entry: NutritionEntry) => sum + entry.total_protein, 0);
         const avgCalories = totalCalories / last7Days.length;
         
         // Calculate unique days tracked in the last 7 days
-        const uniqueDates = new Set(last7Days.map(entry => entry.meal_date));
+        const uniqueDates = new Set(last7Days.map((entry: NutritionEntry) => entry.meal_date));
         const daysTracked = uniqueDates.size;
         
         // Simple goals met calculation (assuming 2000 cal target)
-        const goalsMetCount = last7Days.filter(entry => entry.total_calories >= 1500 && entry.total_calories <= 2500).length;
+        const goalsMetCount = last7Days.filter((entry: NutritionEntry) => entry.total_calories >= 1500 && entry.total_calories <= 2500).length;
         const goalsMetPercentage = (goalsMetCount / last7Days.length) * 100;
 
         setWeeklyStats({
@@ -90,7 +93,7 @@ export default function NutritionTable() {
 
     } catch (error) {
       console.error('Error fetching nutrition data:', error);
-      setError('Failed to load nutrition data');
+      setError(error instanceof Error ? error.message : 'Failed to load nutrition data');
     } finally {
       setLoading(false);
     }
@@ -151,7 +154,7 @@ export default function NutritionTable() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold font-display gradient-text mb-6">
             Your Nutrition Progress
           </h2>
           <p className="text-xl text-white/80 max-w-3xl mx-auto">
@@ -177,7 +180,7 @@ export default function NutritionTable() {
               <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-xl mb-4 group-hover:scale-110 transition-transform">
                 <stat.icon className="text-white" size={24} />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{stat.value}</h3>
+              <h3 className="text-2xl font-bold text-white mb-1 font-display">{stat.value}</h3>
               <p className="text-white/70 text-sm mb-2">{stat.label}</p>
               <span className="text-emerald-400 text-sm font-medium">{stat.change}</span>
             </motion.div>
@@ -211,7 +214,7 @@ export default function NutritionTable() {
         >
           <div className="p-6 border-b border-white/10 flex items-center justify-between">
             <div>
-              <h3 className="text-2xl font-bold text-white">Recent Meals</h3>
+              <h3 className="text-2xl font-bold text-white font-display">Recent Meals</h3>
               <p className="text-white/70 mt-2">Your latest nutrition tracking data</p>
             </div>
             <button 
@@ -276,10 +279,10 @@ export default function NutritionTable() {
             </div>
           ) : (
             <div className="p-12 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-2xl mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-2xl mb-6 animate-float">
                 <Target className="text-white" size={24} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-4">No Nutrition Data Yet</h3>
+              <h3 className="text-xl font-bold text-white mb-4 font-display">No Nutrition Data Yet</h3>
               <p className="text-white/70 mb-6">
                 Start analyzing your meals to see your nutrition progress here.
               </p>

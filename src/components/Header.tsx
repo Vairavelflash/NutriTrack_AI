@@ -91,7 +91,7 @@ export default function Header() {
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          isScrolled ? 'glass-dark shadow-2xl' : 'bg-transparent'
+          isScrolled ? 'bg-dark-900/80 backdrop-blur-strong shadow-2xl border-b border-white/10' : 'bg-transparent'
         }`}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -102,10 +102,10 @@ export default function Header() {
               className="flex items-center space-x-3 cursor-pointer"
               onClick={() => navigate('/home')}
             >
-              <div className="bg-gradient-to-r from-primary-500 to-emerald-500 p-2 rounded-xl">
+              <div className="bg-gradient-to-r from-primary-500 to-emerald-500 p-2 rounded-xl shadow-lg">
                 <Utensils className="text-white" size={24} />
               </div>
-              <span className="text-xl font-bold gradient-text">NutriTrack AI</span>
+              <span className="text-xl font-bold font-display gradient-text">NutriTrack AI</span>
             </motion.div>
 
             {/* Desktop Navigation */}
@@ -117,10 +117,11 @@ export default function Header() {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="text-white/80 hover:text-white font-medium transition-colors duration-200 hover:scale-105 transform"
+                  className="text-white/80 hover:text-white font-medium transition-all duration-200 hover:scale-105 transform relative group"
                   whileHover={{ y: -2 }}
                 >
                   {item.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary-500 to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
                 </motion.button>
               ))}
             </nav>
@@ -132,7 +133,7 @@ export default function Header() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsProfileModalOpen(true)}
-                className="glass hover:bg-white/20 px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2"
+                className="glass hover:bg-white/20 px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg"
               >
                 <User className="text-white" size={20} />
                 {user && (
@@ -168,7 +169,7 @@ export default function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass-dark border-t border-white/10"
+            className="md:hidden bg-dark-900/95 backdrop-blur-strong border-t border-white/10"
           >
             <div className="px-4 py-4 space-y-3">
               {menuItems.map((item) => (

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Camera, Image, Loader, CheckCircle, X, Utensils, Zap, Apple, Beef, Wheat, Droplets, Save, Edit3 } from 'lucide-react';
-import {Mistral} from '@mistralai/mistralai';
 import imageCompression from 'browser-image-compression';
 import { supabase } from '../lib/supabase';
 
@@ -40,8 +39,7 @@ export default function FoodAnalysis() {
   const [mealDate, setMealDate] = useState(new Date().toISOString().split('T')[0]);
   const [mealName, setMealName] = useState('');
 
-  const IMAGE_API_KEY = "186ed0db199b69c9e7ed2c6eb61f118c";
-  const MISTRAL_API_KEY = "KQpq9x34XSgnQf2Be8ISxmsh12sxifRD";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,90 +74,45 @@ export default function FoodAnalysis() {
     setError(null);
 
     try {
-      const client = new Mistral({ apiKey: MISTRAL_API_KEY });
-
-      // Upload image to ImageBB
-      const formData = new FormData();
-      formData.append("image", image);
-      formData.append("expiration", "60");
-
-      const uploadResponse = await fetch(
-        `https://api.imgbb.com/1/upload?key=${IMAGE_API_KEY}`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const uploadData = await uploadResponse.json();
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!uploadData.success) {
-        throw new Error('Failed to upload image');
+      if (!session) {
+        throw new Error('User not authenticated');
       }
 
-     if (uploadData?.success) {
-        // Analyze with Mistral AI
-        const chatResponse = await client.chat.complete({
-          model: "pixtral-12b",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `Identify the food items in the image and return only a structured JSON response in the following format:
-{
-  "food_items": [
-    {
-      "item": "",
-      "calories": "",
-      "protein": "",
-      "fat": "",
-      "vitamin_e": "",
-      "carbohydrates": "",
-      "fiber": "",
-      "iron": ""
-    }
-  ]
-}
-Ensure the response is for the entire plate, summing up all the individual pieces. Ensure the response is valid JSON without any additional text, explanations, or formatting outside the JSON structure.`,
-                },
-                {
-                  type: "image_url",
-                  imageUrl: uploadData.data.url,
-                },
-              ],
-            },
-          ],
-        });
-        // Parse the response
-        const cleanedText =
-          chatResponse?.choices?.[0]?.message?.content &&
-          typeof chatResponse.choices[0].message.content === "string"
-            ? chatResponse.choices[0].message.content
-                .replace(/```json|```/g, "")
-                .trim()
-            : "";
+      // Create FormData for image upload
+      const formData = new FormData();
+      formData.append('image', image);
 
-        if (!cleanedText) {
-          throw new Error("No response from AI analysis");
-        }
+      const response = await fetch(`${API_BASE_URL}/api/analyze-food`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: formData,
+      });
 
-        const parsedResponse = JSON.parse(cleanedText);
-        setResponse(parsedResponse);
-        
-        // Auto-generate meal name from food items
-        if (parsedResponse.food_items && parsedResponse.food_items.length > 0) {
-          const foodNames = parsedResponse.food_items.map((item: FoodItem) => item.item);
-          const generatedName = foodNames.length > 1 
-            ? `${foodNames[0]} and ${foodNames.length - 1} more`
-            : foodNames[0];
-          setMealName(generatedName);
-        }
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze image');
       }
+
+      setResponse(data.data);
+      
+      // Auto-generate meal name from food items
+      if (data.data.food_items && data.data.food_items.length > 0) {
+        const foodNames = data.data.food_items.map((item: FoodItem) => item.item);
+        const generatedName = foodNames.length > 1 
+          ? `${foodNames[0]} and ${foodNames.length - 1} more`
+          : foodNames[0];
+        setMealName(generatedName);
+      }
+
     } catch (error) {
       console.error('Error analyzing image:', error);
-      setError('Failed to analyze image. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to analyze image. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -202,35 +155,41 @@ Ensure the response is for the entire plate, summing up all the individual piece
     setError(null);
 
     try {
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (userError || !user) {
+      if (!session) {
         throw new Error('User not authenticated');
       }
 
       const totals = calculateTotals(response.food_items);
 
-      // Insert nutrition entry
-      const { error: insertError } = await supabase
-        .from('nutrition_entries')
-        .insert({
-          user_id: user.id,
-          username: user.user_metadata?.display_name || 'User',
-          meal_name: mealName.trim(),
-          meal_date: mealDate,
-          total_calories: totals.totalCalories,
-          total_protein: totals.totalProtein,
-          total_carbs: totals.totalCarbs,
-          total_fat: totals.totalFat,
-          total_fiber: totals.totalFiber,
-          total_vitamin_e: totals.totalVitaminE,
-          total_iron: totals.totalIron,
-          food_items: response.food_items
-        });
+      const requestBody = {
+        meal_name: mealName.trim(),
+        meal_date: mealDate,
+        total_calories: totals.totalCalories,
+        total_protein: totals.totalProtein,
+        total_carbs: totals.totalCarbs,
+        total_fat: totals.totalFat,
+        total_fiber: totals.totalFiber,
+        total_vitamin_e: totals.totalVitaminE,
+        total_iron: totals.totalIron,
+        food_items: response.food_items
+      };
 
-      if (insertError) {
-        throw insertError;
+      const response_save = await fetch(`${API_BASE_URL}/api/nutrition/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response_save.json();
+
+      if (!response_save.ok) {
+        throw new Error(data.error || 'Failed to save nutrition data');
       }
 
       // Clear the form
@@ -243,7 +202,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
       
     } catch (error) {
       console.error('Error saving nutrition data:', error);
-      setError('Failed to save nutrition data. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to save nutrition data. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -311,7 +270,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold font-display gradient-text mb-6">
             AI Food Analysis
           </h2>
           <p className="text-xl text-white/80 max-w-3xl mx-auto">
@@ -329,10 +288,10 @@ Ensure the response is for the entire plate, summing up all the individual piece
             <div className="glass rounded-3xl p-8 border-2 border-dashed border-white/20 hover:border-primary-400/50 transition-all duration-300">
               {!image && !isAnalyzing && (
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-full mb-6">
+                  <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-full mb-6 animate-pulse-glow">
                     <Upload className="text-white" size={32} />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">Upload Your Food Photo</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4 font-display">Upload Your Food Photo</h3>
                   <p className="text-white/70 mb-6">
                     Choose an image file from your device
                   </p>
@@ -377,7 +336,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
                       <X size={16} />
                     </button>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">Ready to Analyze</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4 font-display">Ready to Analyze</h3>
                   <p className="text-white/70 mb-6">
                     Click the button below to start AI analysis
                   </p>
@@ -396,7 +355,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
                   <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-full mb-6 animate-pulse">
                     <Loader className="text-white animate-spin" size={32} />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">Analyzing Your Food...</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4 font-display">Analyzing Your Food...</h3>
                   <p className="text-white/70 mb-6">
                     Our AI is processing the nutritional content
                   </p>
@@ -416,7 +375,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
                   <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-red-500 to-red-600 rounded-full mb-6">
                     <X className="text-white" size={32} />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">Analysis Failed</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4 font-display">Analysis Failed</h3>
                   <p className="text-red-200 mb-6">{error}</p>
                   <button 
                     onClick={clearImage}
@@ -438,7 +397,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
             {response?.food_items && response.food_items.length > 0 ? (
               <div className="space-y-6">
                 <div className="glass rounded-3xl p-6">
-                  <h3 className="text-2xl font-bold text-white mb-4 flex items-center">
+                  <h3 className="text-2xl font-bold text-white mb-4 flex items-center font-display">
                     <CheckCircle className="text-emerald-400 mr-3" size={28} />
                     Analysis Complete!
                   </h3>
@@ -449,7 +408,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
                   {/* Individual Food Items */}
                   {response.food_items.map((item, itemIndex) => (
                     <div key={itemIndex} className="mb-6">
-                      <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                      <h4 className="text-xl font-bold text-white mb-4 flex items-center font-display">
                         <Utensils className="text-primary-400 mr-2" size={20} />
                         {item.item}
                       </h4>
@@ -495,7 +454,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
                     const totals = calculateTotals(response.food_items);
                     return (
                       <div className="mt-8 p-6 bg-gradient-to-r from-primary-500/20 to-emerald-500/20 rounded-2xl border border-primary-400/30">
-                        <h4 className="text-xl font-bold text-white mb-4 text-center">Total Nutrition Summary</h4>
+                        <h4 className="text-xl font-bold text-white mb-4 text-center font-display">Total Nutrition Summary</h4>
                         <div className="overflow-x-auto">
                           <table className="w-full">
                             <thead>
@@ -620,10 +579,10 @@ Ensure the response is for the entire plate, summing up all the individual piece
               </div>
             ) : (
               <div className="glass rounded-3xl p-8 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-2xl mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-2xl mb-6 animate-float">
                   <Utensils className="text-white" size={24} />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-4">
+                <h3 className="text-xl font-bold text-white mb-4 font-display">
                   Nutrition Results
                 </h3>
                 <p className="text-white/70">

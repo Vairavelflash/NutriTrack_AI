@@ -370,7 +370,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
                                 <div className="text-right">
                                   <span className="text-lg font-bold text-white">{value}</span>
                                   {key === 'calories' && <span className="text-white/60 ml-1">kcal</span>}
-                                  {key !== 'calories' && <span className="text-white/60 ml-1">g</span>}
+                                  {/* {key !== 'calories' && <span className="text-white/60 ml-1">g</span>} */}
                                 </div>
                               </div>
                             </motion.div>

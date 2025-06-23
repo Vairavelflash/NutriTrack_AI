@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Camera, Image, Loader, CheckCircle, X, Utensils, Zap, Apple, Beef, Wheat, Droplets, Save } from 'lucide-react';
+import { Upload, Camera, Image, Loader, CheckCircle, X, Utensils, Zap, Apple, Beef, Wheat, Droplets, Save, Edit3 } from 'lucide-react';
 import {Mistral} from '@mistralai/mistralai';
 import imageCompression from 'browser-image-compression';
 import { supabase } from '../lib/supabase';
@@ -38,6 +38,7 @@ export default function FoodAnalysis() {
   const [response, setResponse] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mealDate, setMealDate] = useState(new Date().toISOString().split('T')[0]);
+  const [mealName, setMealName] = useState('');
 
   const IMAGE_API_KEY = "186ed0db199b69c9e7ed2c6eb61f118c";
   const MISTRAL_API_KEY = "KQpq9x34XSgnQf2Be8ISxmsh12sxifRD";
@@ -57,6 +58,7 @@ export default function FoodAnalysis() {
       setImagePreview(previewUrl);
       setError(null);
       setResponse(null);
+      setMealName(''); // Reset meal name when new image is uploaded
     } catch (error) {
       console.error('Error compressing image:', error);
       setError('Failed to process image. Please try again.');
@@ -145,6 +147,15 @@ Ensure the response is for the entire plate, summing up all the individual piece
 
         const parsedResponse = JSON.parse(cleanedText);
         setResponse(parsedResponse);
+        
+        // Auto-generate meal name from food items
+        if (parsedResponse.food_items && parsedResponse.food_items.length > 0) {
+          const foodNames = parsedResponse.food_items.map((item: FoodItem) => item.item);
+          const generatedName = foodNames.length > 1 
+            ? `${foodNames[0]} and ${foodNames.length - 1} more`
+            : foodNames[0];
+          setMealName(generatedName);
+        }
       }
     } catch (error) {
       console.error('Error analyzing image:', error);
@@ -182,6 +193,11 @@ Ensure the response is for the entire plate, summing up all the individual piece
       return;
     }
 
+    if (!mealName.trim()) {
+      setError('Please enter a meal name');
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
@@ -201,6 +217,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
         .insert({
           user_id: user.id,
           username: user.user_metadata?.display_name || 'User',
+          meal_name: mealName.trim(),
           meal_date: mealDate,
           total_calories: totals.totalCalories,
           total_protein: totals.totalProtein,
@@ -219,6 +236,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
       // Clear the form
       clearImage();
       setMealDate(new Date().toISOString().split('T')[0]);
+      setMealName('');
       
       // Show success message
       alert('Nutrition data saved successfully!');
@@ -239,6 +257,7 @@ Ensure the response is for the entire plate, summing up all the individual piece
     }
     setResponse(null);
     setError(null);
+    setMealName('');
   };
 
   const getNutrientIcon = (nutrient: string) => {
@@ -549,8 +568,25 @@ Ensure the response is for the entire plate, summing up all the individual piece
                     );
                   })()}
                   
-                  {/* Meal Date and Submit */}
+                  {/* Meal Name, Date and Submit */}
                   <div className="mt-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-2">
+                        Meal Name
+                      </label>
+                      <div className="relative">
+                        <Edit3 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" size={20} />
+                        <input
+                          type="text"
+                          value={mealName}
+                          onChange={(e) => setMealName(e.target.value)}
+                          className="input-field pl-12 w-full"
+                          placeholder="Enter meal name (e.g., Breakfast, Lunch, Dinner)"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
                     <div>
                       <label className="block text-sm font-medium text-white/90 mb-2">
                         Meal Date
@@ -572,8 +608,8 @@ Ensure the response is for the entire plate, summing up all the individual piece
                       </button>
                       <button 
                         onClick={handleSubmit}
-                        disabled={isSaving}
-                        className="btn-primary flex-1 flex items-center justify-center"
+                        disabled={isSaving || !mealName.trim()}
+                        className="btn-primary flex-1 flex items-center justify-center disabled:opacity-50"
                       >
                         <Save className="mr-2" size={20} />
                         {isSaving ? 'Saving...' : 'Submit'}

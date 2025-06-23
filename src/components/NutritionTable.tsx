@@ -8,6 +8,7 @@ interface NutritionEntry {
   id: string;
   meal_date: string;
   username: string;
+  meal_name: string;
   total_calories: number;
   total_protein: number;
   total_carbs: number;
@@ -228,12 +229,12 @@ export default function NutritionTable() {
                 <thead className="bg-white/5">
                   <tr>
                     <th className="text-left p-4 text-white/80 font-medium">Date</th>
+                    <th className="text-left p-4 text-white/80 font-medium">Meal Name</th>
                     <th className="text-left p-4 text-white/80 font-medium">User</th>
                     <th className="text-center p-4 text-white/80 font-medium">Calories</th>
                     <th className="text-center p-4 text-white/80 font-medium">Protein (g)</th>
                     <th className="text-center p-4 text-white/80 font-medium">Carbs (g)</th>
                     <th className="text-center p-4 text-white/80 font-medium">Fat (g)</th>
-                    <th className="text-center p-4 text-white/80 font-medium">Fiber (g)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -246,7 +247,8 @@ export default function NutritionTable() {
                       className="border-b border-white/5 hover:bg-white/5 transition-colors"
                     >
                       <td className="p-4 text-white/90">{new Date(meal.meal_date).toLocaleDateString()}</td>
-                      <td className="p-4 text-white font-medium">{meal.username}</td>
+                      <td className="p-4 text-white font-medium">{meal.meal_name}</td>
+                      <td className="p-4 text-white/80">{meal.username}</td>
                       <td className="p-4 text-center">
                         <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                           {Math.round(meal.total_calories)}
@@ -265,11 +267,6 @@ export default function NutritionTable() {
                       <td className="p-4 text-center">
                         <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                           {Math.round(meal.total_fat)}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                          {Math.round(meal.total_fiber)}
                         </span>
                       </td>
                     </tr>

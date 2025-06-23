@@ -73,7 +73,7 @@ export default function Footer() {
               {/* Social Links with consistent animations */}
               <div className="flex items-center justify-center space-x-6">
                 <motion.a
-                  href="https://github.com"
+                  href="https://github.com/Vairavelflash/NutriTrack_AI"
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.2, rotate: 360 }}

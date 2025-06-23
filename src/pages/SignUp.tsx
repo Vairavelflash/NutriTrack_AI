@@ -45,6 +45,26 @@ export default function SignUp() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden">
+      {/* White Circle Icon - Top Right */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5, duration: 0.8 }}
+        className="fixed top-6 right-6 z-50"
+      >
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: 360 }}
+          whileTap={{ scale: 0.9 }}
+          className="w-12 h-12 rounded-full overflow-hidden shadow-2xl cursor-pointer animate-pulse-glow"
+        >
+          <img 
+            src="/white_circle_360x360 copy.png" 
+            alt="Brand Icon"
+            className="w-full h-full object-cover"
+          />
+        </motion.div>
+      </motion.div>
+
       {/* Enhanced animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -104,7 +124,7 @@ export default function SignUp() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-2xl mb-4 shadow-lg">
               <Utensils className="text-white" size={28} />
             </div>
-            <h1 className="text-3xl font-bold gradient-text mb-2">
+            <h1 className="text-3xl font-bold font-display gradient-text mb-2">
               Join NutriTrack AI
             </h1>
             <p className="text-white/80">Create your account to get started</p>

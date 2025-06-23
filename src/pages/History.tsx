@@ -89,6 +89,27 @@ export default function History() {
   return (
     <div className="min-h-screen">
       <Header />
+      
+      {/* White Circle Icon - Top Right (for pages without header) */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5, duration: 0.8 }}
+        className="fixed top-20 right-6 z-40"
+      >
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: 360 }}
+          whileTap={{ scale: 0.9 }}
+          className="w-10 h-10 rounded-full overflow-hidden shadow-2xl cursor-pointer animate-pulse-glow"
+        >
+          <img 
+            src="/white_circle_360x360 copy.png" 
+            alt="Brand Icon"
+            className="w-full h-full object-cover"
+          />
+        </motion.div>
+      </motion.div>
+
       <div className="pt-16 pb-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <motion.div
@@ -97,7 +118,7 @@ export default function History() {
             transition={{ duration: 0.8 }}
             className="mb-8"
           >
-            <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold font-display gradient-text mb-4">
               Nutrition History
             </h1>
             <p className="text-xl text-white/80">
@@ -187,7 +208,7 @@ export default function History() {
               className="glass rounded-3xl overflow-hidden"
             >
               <div className="p-6 border-b border-white/10">
-                <h3 className="text-2xl font-bold text-white">Nutrition Records</h3>
+                <h3 className="text-2xl font-bold text-white font-display">Nutrition Records</h3>
                 <p className="text-white/70 mt-2">
                   Showing {paginatedData.length} of {filteredData.length} records
                 </p>
@@ -297,10 +318,10 @@ export default function History() {
                 </>
               ) : (
                 <div className="p-12 text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-2xl mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-emerald-500 rounded-2xl mb-6 animate-float">
                     <Target className="text-white" size={24} />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-4">No Records Found</h3>
+                  <h3 className="text-xl font-bold text-white mb-4 font-display">No Records Found</h3>
                   <p className="text-white/70 mb-6">
                     {dateFilter 
                       ? `No nutrition records found for ${new Date(dateFilter).toLocaleDateString()}.`

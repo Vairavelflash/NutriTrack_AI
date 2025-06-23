@@ -126,40 +126,56 @@ export default function Header() {
               ))}
             </nav>
 
-            {/* Profile Menu */}
-            <div className="hidden md:flex items-center space-x-4">
-              {/* Profile Button with Username */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsProfileModalOpen(true)}
-                className="glass hover:bg-white/20 px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg"
+            {/* Right side icons */}
+            <div className="flex items-center space-x-4">
+              {/* White Circle Icon */}
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 360 }}
+                whileTap={{ scale: 0.9 }}
+                className="w-10 h-10 rounded-full overflow-hidden shadow-lg cursor-pointer animate-pulse-glow"
               >
-                <User className="text-white" size={20} />
-                {user && (
-                  <span className="text-white font-medium">{user.username}</span>
-                )}
-              </motion.button>
-              
+                <img 
+                  src="/white_circle_360x360 copy.png" 
+                  alt="Brand Icon"
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+
+              {/* Profile Menu - Desktop */}
+              <div className="hidden md:flex items-center space-x-4">
+                {/* Profile Button with Username */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="glass hover:bg-white/20 px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg"
+                >
+                  <User className="text-white" size={20} />
+                  {user && (
+                    <span className="text-white font-medium">{user.username}</span>
+                  )}
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsLogoutModalOpen(true)}
+                  className="btn-ghost text-sm flex items-center"
+                >
+                  <LogOut size={16} className="mr-2" />
+                  Logout
+                </motion.button>
+              </div>
+
+              {/* Mobile Menu Button */}
               <motion.button
-                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setIsLogoutModalOpen(true)}
-                className="btn-ghost text-sm flex items-center"
+                className="md:hidden glass p-2 rounded-xl"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
-                <LogOut size={16} className="mr-2" />
-                Logout
+                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </motion.button>
             </div>
-
-            {/* Mobile Menu Button */}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              className="md:hidden glass p-2 rounded-xl"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </motion.button>
           </div>
         </div>
 

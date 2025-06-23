@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Camera, Image, Loader, CheckCircle, X, Utensils, Zap, Apple, Beef, Wheat, Droplets } from 'lucide-react';
-import Mistral from '@mistralai/mistralai';
+import {Mistral} from '@mistralai/mistralai';
 import imageCompression from 'browser-image-compression';
 
 interface FoodItem {
@@ -82,16 +82,17 @@ export default function FoodAnalysis() {
         throw new Error('Failed to upload image');
       }
 
-      // Analyze with Mistral AI
-      const chatResponse = await client.chat.complete({
-        model: "pixtral-12b",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Identify the food items in the image and return only a structured JSON response in the following format:
+     if (uploadData?.success) {
+        // Analyze with Mistral AI
+        const chatResponse = await client.chat.complete({
+          model: "pixtral-12b",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Identify the food items in the image and return only a structured JSON response in the following format:
 {
   "food_items": [
     {
@@ -107,28 +108,31 @@ export default function FoodAnalysis() {
   ]
 }
 Ensure the response is for the entire plate, summing up all the individual pieces. Ensure the response is valid JSON without any additional text, explanations, or formatting outside the JSON structure.`,
-              },
-              {
-                type: "image_url",
-                imageUrl: uploadData.data.url,
-              },
-            ],
-          },
-        ],
-      });
+                },
+                {
+                  type: "image_url",
+                  imageUrl: uploadData.data.url,
+                },
+              ],
+            },
+          ],
+        });
+        // Parse the response
+        const cleanedText =
+          chatResponse?.choices?.[0]?.message?.content &&
+          typeof chatResponse.choices[0].message.content === "string"
+            ? chatResponse.choices[0].message.content
+                .replace(/```json|```/g, "")
+                .trim()
+            : "";
 
-      // Parse the response
-      const cleanedText = chatResponse?.choices?.[0]?.message?.content
-        && typeof chatResponse.choices[0].message.content === "string"
-        ? chatResponse.choices[0].message.content.replace(/```json|```/g, "").trim()
-        : "";
-      
-      if (!cleanedText) {
-        throw new Error('No response from AI analysis');
+        if (!cleanedText) {
+          throw new Error("No response from AI analysis");
+        }
+
+        const parsedResponse = JSON.parse(cleanedText);
+        setResponse(parsedResponse);
       }
-
-      const parsedResponse = JSON.parse(cleanedText);
-      setResponse(parsedResponse);
     } catch (error) {
       console.error('Error analyzing image:', error);
       setError('Failed to analyze image. Please try again.');

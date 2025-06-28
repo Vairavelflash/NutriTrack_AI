@@ -39,8 +39,6 @@ export default function NutritionTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-
   const fetchNutritionData = async () => {
     try {
       setLoading(true);
@@ -53,24 +51,23 @@ export default function NutritionTable() {
         throw new Error('User not authenticated');
       }
 
-      // Fetch nutrition entries from backend
-      const response = await fetch(`${API_BASE_URL}/api/nutrition/history?limit=10`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
+      // Fetch nutrition entries directly from Supabase
+      const { data, error: fetchError } = await supabase
+        .from('nutrition_entries')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('meal_date', { ascending: false })
+        .limit(10);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch nutrition data');
+      if (fetchError) {
+        throw fetchError;
       }
 
-      setNutritionData(data.data || []);
+      setNutritionData(data || []);
       
       // Calculate weekly stats
-      if (data.data && data.data.length > 0) {
-        const last7Days = data.data.slice(0, 7);
+      if (data && data.length > 0) {
+        const last7Days = data.slice(0, 7);
         const totalCalories = last7Days.reduce((sum: number, entry: NutritionEntry) => sum + entry.total_calories, 0);
         const totalProtein = last7Days.reduce((sum: number, entry: NutritionEntry) => sum + entry.total_protein, 0);
         const avgCalories = totalCalories / last7Days.length;

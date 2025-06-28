@@ -39,8 +39,6 @@ export default function FoodAnalysis() {
   const [mealDate, setMealDate] = useState(new Date().toISOString().split('T')[0]);
   const [mealName, setMealName] = useState('');
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -85,17 +83,16 @@ export default function FoodAnalysis() {
       const formData = new FormData();
       formData.append('image', image);
 
-      const response = await fetch(`${API_BASE_URL}/api/analyze-food`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
+      // Call Supabase Edge Function
+      const { data, error: functionError } = await supabase.functions.invoke('analyze-food', {
         body: formData,
       });
 
-      const data = await response.json();
+      if (functionError) {
+        throw new Error(functionError.message || 'Failed to analyze image');
+      }
 
-      if (!response.ok) {
+      if (!data.success) {
         throw new Error(data.error || 'Failed to analyze image');
       }
 
@@ -164,32 +161,27 @@ export default function FoodAnalysis() {
 
       const totals = calculateTotals(response.food_items);
 
-      const requestBody = {
-        meal_name: mealName.trim(),
-        meal_date: mealDate,
-        total_calories: totals.totalCalories,
-        total_protein: totals.totalProtein,
-        total_carbs: totals.totalCarbs,
-        total_fat: totals.totalFat,
-        total_fiber: totals.totalFiber,
-        total_vitamin_e: totals.totalVitaminE,
-        total_iron: totals.totalIron,
-        food_items: response.food_items
-      };
+      const { data, error: insertError } = await supabase
+        .from('nutrition_entries')
+        .insert({
+          user_id: session.user.id,
+          username: session.user.user_metadata?.display_name || 'User',
+          meal_name: mealName.trim(),
+          meal_date: mealDate,
+          total_calories: totals.totalCalories,
+          total_protein: totals.totalProtein,
+          total_carbs: totals.totalCarbs,
+          total_fat: totals.totalFat,
+          total_fiber: totals.totalFiber,
+          total_vitamin_e: totals.totalVitaminE,
+          total_iron: totals.totalIron,
+          food_items: response.food_items
+        })
+        .select()
+        .single();
 
-      const response_save = await fetch(`${API_BASE_URL}/api/nutrition/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data = await response_save.json();
-
-      if (!response_save.ok) {
-        throw new Error(data.error || 'Failed to save nutrition data');
+      if (insertError) {
+        throw insertError;
       }
 
       // Clear the form

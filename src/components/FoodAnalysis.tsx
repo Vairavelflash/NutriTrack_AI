@@ -83,19 +83,26 @@ export default function FoodAnalysis() {
       const formData = new FormData();
       formData.append('image', image);
 
+      console.log('Calling Edge Function with image:', image.name, image.size);
+
       // Call Supabase Edge Function
       const { data, error: functionError } = await supabase.functions.invoke('analyze-food', {
         body: formData,
       });
 
+      console.log('Edge Function Response:', { data, functionError });
+
       if (functionError) {
+        console.error('Function Error:', functionError);
         throw new Error(functionError.message || 'Failed to analyze image');
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to analyze image');
+      if (!data || !data.success) {
+        console.error('Invalid response:', data);
+        throw new Error(data?.error || 'Failed to analyze image');
       }
 
+      console.log('Analysis successful:', data.data);
       setResponse(data.data);
       
       // Auto-generate meal name from food items

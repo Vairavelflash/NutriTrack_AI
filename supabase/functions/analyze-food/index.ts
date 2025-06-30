@@ -1,5 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -69,7 +67,19 @@ function extractJsonFromResponse(text: string): string {
   throw new Error(`No valid JSON structure found in response: ${text.substring(0, 200)}...`)
 }
 
-serve(async (req: Request) => {
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  
+  // Use iterative approach to avoid call stack overflow
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  
+  return btoa(binary)
+}
+
+Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -109,9 +119,9 @@ serve(async (req: Request) => {
 
     console.log("API keys found, uploading image to ImageBB...")
 
-    // Convert File to base64 for ImageBB
+    // Convert File to base64 for ImageBB using iterative approach
     const arrayBuffer = await imageFile.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    const base64 = arrayBufferToBase64(arrayBuffer)
 
     // Upload image to ImageBB
     const uploadFormData = new FormData()

@@ -21,6 +21,54 @@ interface AnalysisResponse {
   food_items: FoodItem[];
 }
 
+function extractJsonFromResponse(text: string): string {
+  if (!text) {
+    throw new Error("Empty response text")
+  }
+
+  // First, try to find a complete JSON object by locating the first '{' and last '}'
+  const firstBrace = text.indexOf('{')
+  const lastBrace = text.lastIndexOf('}')
+  
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const jsonCandidate = text.substring(firstBrace, lastBrace + 1)
+    
+    // Test if this is valid JSON
+    try {
+      JSON.parse(jsonCandidate)
+      return jsonCandidate
+    } catch {
+      // If that fails, continue to other methods
+    }
+  }
+
+  // Fallback: Remove markdown code block fences and other common formatting
+  let cleanedText = text
+    .replace(/```json/gi, '')
+    .replace(/```/g, '')
+    .replace(/^\s*[\r\n]/gm, '') // Remove empty lines
+    .trim()
+
+  // Try to extract JSON from the cleaned text
+  const cleanedFirstBrace = cleanedText.indexOf('{')
+  const cleanedLastBrace = cleanedText.lastIndexOf('}')
+  
+  if (cleanedFirstBrace !== -1 && cleanedLastBrace !== -1 && cleanedLastBrace > cleanedFirstBrace) {
+    const finalCandidate = cleanedText.substring(cleanedFirstBrace, cleanedLastBrace + 1)
+    
+    // Test if this is valid JSON
+    try {
+      JSON.parse(finalCandidate)
+      return finalCandidate
+    } catch {
+      // If still fails, throw error with more context
+      throw new Error(`Could not extract valid JSON. Original text: ${text.substring(0, 200)}...`)
+    }
+  }
+
+  throw new Error(`No valid JSON structure found in response: ${text.substring(0, 200)}...`)
+}
+
 serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -139,24 +187,38 @@ Ensure the response is for the entire plate, summing up all the individual piece
     const chatData = await chatResponse.json()
     console.log("Mistral AI response:", chatData)
 
-    // Parse the response
-    const cleanedText = chatData?.choices?.[0]?.message?.content &&
-      typeof chatData.choices[0].message.content === "string"
-        ? chatData.choices[0].message.content.replace(/```json|```/g, "").trim()
-        : ""
-
-    if (!cleanedText) {
-      throw new Error("No response from AI analysis")
+    // Get the raw response content
+    const rawContent = chatData?.choices?.[0]?.message?.content
+    
+    if (!rawContent || typeof rawContent !== "string") {
+      throw new Error("No valid response content from AI analysis")
     }
 
-    console.log("Cleaned response text:", cleanedText)
+    console.log("Raw AI response content:", rawContent)
 
+    // Use the robust JSON extraction function
+    let extractedJson: string
+    try {
+      extractedJson = extractJsonFromResponse(rawContent)
+    } catch (extractError) {
+      console.error("JSON extraction error:", extractError.message)
+      throw new Error(`Failed to extract JSON from AI response: ${extractError.message}`)
+    }
+
+    console.log("Extracted JSON:", extractedJson)
+
+    // Parse the extracted JSON
     let parsedResponse: AnalysisResponse
     try {
-      parsedResponse = JSON.parse(cleanedText)
+      parsedResponse = JSON.parse(extractedJson)
     } catch (parseError) {
-      console.error("JSON parse error:", parseError, "Raw text:", cleanedText)
-      throw new Error("Invalid JSON response from AI")
+      console.error("Final JSON parse error:", parseError, "Extracted JSON:", extractedJson)
+      throw new Error(`Invalid JSON structure: ${parseError.message}`)
+    }
+    
+    // Validate the structure
+    if (!parsedResponse.food_items || !Array.isArray(parsedResponse.food_items)) {
+      throw new Error("Invalid response structure: missing or invalid food_items array")
     }
     
     console.log("Analysis complete:", parsedResponse)
